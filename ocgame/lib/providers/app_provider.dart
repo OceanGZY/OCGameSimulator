@@ -2,7 +2,7 @@
  * @Author: OCEAN.GZY
  * @Date: 2026-03-28 17:26:54
  * @LastEditors: OCEAN.GZY
- * @LastEditTime: 2026-03-28 17:27:01
+ * @LastEditTime: 2026-03-28 19:07:24
  * @FilePath: /ocgame/lib/providers/app_provider.dart
  * @Description: 注释信息
  */
@@ -28,7 +28,7 @@ class AppProvider extends ChangeNotifier {
     romData = data;
     romName = name;
     core.loadCore();
-    core.loadRom(data);
+    core.loadRom(data, name);
     notifyListeners();
   }
 

@@ -1,99 +1,143 @@
-/*
- * @Author: OCEAN.GZY
- * @Date: 2026-03-28 17:25:36
- * @LastEditors: OCEAN.GZY
- * @LastEditTime: 2026-03-28 17:25:42
- * @FilePath: /ocgame/lib/core/libretro_core.dart
- * @Description: 注释信息
- */
 import 'dart:ffi';
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:ffi/ffi.dart';
+
+final class retro_game_info extends Struct {
+  external Pointer<Char> path;
+  external Pointer<Uint8> data;
+  @Int32()
+  external int size;
+  external Pointer<Char> meta;
+}
+
+typedef native_init = Void Function();
+typedef native_deinit = Void Function();
+typedef native_load = Int32 Function(Pointer<retro_game_info>);
+typedef native_run = Void Function();
+typedef native_input = Void Function(Int32, Int32, Int32, Int32, Int32);
+typedef native_video = Void Function(Pointer<Void>);
+typedef native_speed = Void Function(Float);
+typedef native_audio = Void Function(Bool);
+typedef native_vcb = Void Function(Pointer<Uint8>, Uint32, Uint32, Uint32);
+
+typedef dart_init = void Function();
+typedef dart_deinit = void Function();
+typedef dart_load = int Function(Pointer<retro_game_info>);
+typedef dart_run = void Function();
+typedef dart_input = void Function(int, int, int, int, int);
+typedef dart_video = void Function(Pointer<Void>);
+typedef dart_speed = void Function(double);
+typedef dart_audio = void Function(bool);
 
 class LibretroCore {
   static final LibretroCore instance = LibretroCore._internal();
-
   LibretroCore._internal();
 
-  DynamicLibrary? _lib;
-  bool _inited = false;
+  DynamicLibrary? lib;
+  bool ok = false;
 
-  int Function()? retro_init;
-  void Function()? retro_deinit;
-  void Function(Pointer<Uint8>, int)? retro_load_game;
-  void Function()? retro_run;
-  Pointer<Uint32> Function()? retro_get_frame;
-  void Function(int, int)? retro_set_input;
-  void Function(double)? retro_set_speed;
-  void Function(bool)? retro_set_audio;
+  Uint32List fb = Uint32List(256 * 240);
+  int w = 256, h = 240;
 
-  static const int BUTTON_UP = 0;
-  static const int BUTTON_DOWN = 1;
-  static const int BUTTON_LEFT = 2;
-  static const int BUTTON_RIGHT = 3;
-  static const int BUTTON_A = 4;
-  static const int BUTTON_B = 5;
-  static const int BUTTON_SELECT = 6;
-  static const int BUTTON_START = 7;
+  dart_init rInit = () {};
+  dart_deinit rDeinit = () {};
+  dart_load rLoad = (_) => 0;
+  dart_run rRun = () {};
+  dart_input rInput = (_, _, _, _, _) {};
+  dart_video rVid = (_) {};
+  dart_speed rSpeed = (_) {};
+  dart_audio rAud = (_) {};
+
+  static const int UP = 16,
+      DOWN = 17,
+      LEFT = 18,
+      RIGHT = 19,
+      A = 8,
+      B = 9,
+      START = 7,
+      SELECT = 6;
 
   bool loadCore() {
-    if (_inited) return true;
+    if (ok) return true;
     try {
-      _lib = DynamicLibrary.open("libretro_nes.so");
-      _bind();
-      retro_init?.call();
-      _inited = true;
+      if (Platform.isIOS) {
+        // lib = DynamicLibrary.process();
+        lib = DynamicLibrary.open("fceumm_libretro_ios.dylib");
+      } else {
+        lib = DynamicLibrary.open("fceumm_libretro_android.so");
+      }
+
+      // 🔥 🔥 🔥 关键：iOS 不加任何前缀！！！
+      String prefix = "";
+
+      rInit = lib!.lookupFunction<native_init, dart_init>(
+        "${prefix}retro_init",
+      );
+      rDeinit = lib!.lookupFunction<native_deinit, dart_deinit>(
+        "${prefix}retro_deinit",
+      );
+      rLoad = lib!.lookupFunction<native_load, dart_load>(
+        "${prefix}retro_load_game",
+      );
+      rRun = lib!.lookupFunction<native_run, dart_run>("${prefix}retro_run");
+      rInput = lib!.lookupFunction<native_input, dart_input>(
+        "${prefix}retro_input_state",
+      );
+      rVid = lib!.lookupFunction<native_video, dart_video>(
+        "${prefix}retro_set_video_refresh",
+      );
+      rSpeed = lib!.lookupFunction<native_speed, dart_speed>(
+        "${prefix}retro_set_speed",
+      );
+      rAud = lib!.lookupFunction<native_audio, dart_audio>(
+        "${prefix}retro_set_audio",
+      );
+
+      rInit();
+      final cb = Pointer.fromFunction<native_vcb>(_v);
+      rVid(cb.cast());
+      ok = true;
       return true;
-    } catch (_) {
+    } catch (e) {
+      print("❌ $e");
       return false;
     }
   }
 
-  void _bind() {
-    retro_init = _lib?.lookupFunction<Int32 Function(), int Function()>(
-      'retro_init',
-    );
-    retro_deinit = _lib?.lookupFunction<Void Function(), void Function()>(
-      'retro_deinit',
-    );
-    retro_load_game = _lib
-        ?.lookupFunction<
-          Void Function(Pointer<Uint8>, Int32),
-          void Function(Pointer<Uint8>, int)
-        >('retro_load_game');
-    retro_run = _lib?.lookupFunction<Void Function(), void Function()>(
-      'retro_run',
-    );
-    retro_get_frame = _lib
-        ?.lookupFunction<
-          Pointer<Uint32> Function(),
-          Pointer<Uint32> Function()
-        >('retro_get_frame');
-    retro_set_input = _lib
-        ?.lookupFunction<Void Function(Int32, Int32), void Function(int, int)>(
-          'retro_set_input',
-        );
-    retro_set_speed = _lib
-        ?.lookupFunction<Void Function(Double), void Function(double)>(
-          'retro_set_speed',
-        );
-    retro_set_audio = _lib
-        ?.lookupFunction<Void Function(Bool), void Function(bool)>(
-          'retro_set_audio',
-        );
+  static void _v(Pointer<Uint8> d, int w, int h, int pitch) {
+    if (d == nullptr) return;
+    final i = d.asTypedList(h * pitch);
+    final b = instance.fb;
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        final p = y * pitch + x * 4;
+        b[y * w + x] = (0xFF << 24) | (i[p + 2] << 16) | (i[p + 1] << 8) | i[p];
+      }
+    }
+    instance.w = w;
+    instance.h = h;
   }
 
-  void loadRom(Uint8List data) {
-    final ptr = malloc.allocate<Uint8>(data.length);
-    ptr.asTypedList(data.length).setAll(0, data);
-    retro_load_game?.call(ptr, data.length);
-    malloc.free(ptr);
+  bool loadRom(Uint8List data, String name) {
+    final info = calloc<retro_game_info>();
+    final rom = calloc<Uint8>(data.length);
+    rom.asTypedList(data.length).setAll(0, data);
+    info.ref.data = rom;
+    info.ref.size = data.length;
+    info.ref.path = name.toNativeUtf8().cast();
+
+    final res = rLoad(info);
+    calloc.free(info);
+    print("🎮 load_game = $res");
+    return res == 1;
   }
 
-  void runFrame() => retro_run?.call();
-  Pointer<Uint32> get frameBuffer => retro_get_frame?.call() ?? nullptr;
-  void setButton(int btn, bool pressed) =>
-      retro_set_input?.call(btn, pressed ? 1 : 0);
-  void setSpeed(double s) => retro_set_speed?.call(s);
-  void setAudio(bool enable) => retro_set_audio?.call(enable);
+  void runFrame() => rRun();
+  Uint32List get frameBuffer => fb;
+  int get width => w;
+  int get height => h;
+  void setButton(int k, bool p) => rInput(0, 1, 0, k, p ? 1 : 0);
+  void setSpeed(double s) => rSpeed(s);
+  void setAudio(bool e) => rAud(e);
 }

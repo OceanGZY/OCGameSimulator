@@ -9,69 +9,60 @@ class VirtualGamepad extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // DPad
         Positioned(
           left: 30,
           bottom: 60,
           child: Column(
             children: [
-              _key(
-                size: 50,
-                onDown: () => _press(LibretroCore.BUTTON_UP, true),
-                onUp: () => _press(LibretroCore.BUTTON_UP, false),
-                child: const Icon(Icons.arrow_upward, color: Colors.white),
+              _btn(
+                onDown: () => _press(LibretroCore.UP, true),
+                onUp: () => _press(LibretroCore.UP, false),
+                child: Icon(Icons.arrow_upward, color: Colors.white),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(
                 children: [
-                  _key(
-                    size: 50,
-                    onDown: () => _press(LibretroCore.BUTTON_LEFT, true),
-                    onUp: () => _press(LibretroCore.BUTTON_LEFT, false),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
+                  _btn(
+                    onDown: () => _press(LibretroCore.LEFT, true),
+                    onUp: () => _press(LibretroCore.LEFT, false),
+                    child: Icon(Icons.arrow_back, color: Colors.white),
                   ),
-                  const SizedBox(width: 70),
-                  _key(
-                    size: 50,
-                    onDown: () => _press(LibretroCore.BUTTON_RIGHT, true),
-                    onUp: () => _press(LibretroCore.BUTTON_RIGHT, false),
-                    child: const Icon(Icons.arrow_forward, color: Colors.white),
+                  SizedBox(width: 70),
+                  _btn(
+                    onDown: () => _press(LibretroCore.RIGHT, true),
+                    onUp: () => _press(LibretroCore.RIGHT, false),
+                    child: Icon(Icons.arrow_forward, color: Colors.white),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              _key(
-                size: 50,
-                onDown: () => _press(LibretroCore.BUTTON_DOWN, true),
-                onUp: () => _press(LibretroCore.BUTTON_DOWN, false),
-                child: const Icon(Icons.arrow_downward, color: Colors.white),
+              SizedBox(height: 8),
+              _btn(
+                onDown: () => _press(LibretroCore.DOWN, true),
+                onUp: () => _press(LibretroCore.DOWN, false),
+                child: Icon(Icons.arrow_downward, color: Colors.white),
               ),
             ],
           ),
         ),
-
-        // A B
         Positioned(
           right: 30,
           bottom: 80,
           child: Row(
             children: [
               _circle(
+                onDown: () => _press(LibretroCore.B, true),
+                onUp: () => _press(LibretroCore.B, false),
                 label: 'B',
-                onDown: () => _press(LibretroCore.BUTTON_B, true),
-                onUp: () => _press(LibretroCore.BUTTON_B, false),
               ),
-              const SizedBox(width: 24),
+              SizedBox(width: 24),
               _circle(
+                onDown: () => _press(LibretroCore.A, true),
+                onUp: () => _press(LibretroCore.A, false),
                 label: 'A',
-                onDown: () => _press(LibretroCore.BUTTON_A, true),
-                onUp: () => _press(LibretroCore.BUTTON_A, false),
               ),
             ],
           ),
         ),
-
-        // SELECT START
         Positioned(
           bottom: 30,
           left: MediaQuery.of(context).size.width * 0.5 - 70,
@@ -79,14 +70,14 @@ class VirtualGamepad extends StatelessWidget {
             children: [
               _smallBtn(
                 'SELECT',
-                onDown: () => _press(LibretroCore.BUTTON_SELECT, true),
-                onUp: () => _press(LibretroCore.BUTTON_SELECT, false),
+                onDown: () => _press(LibretroCore.SELECT, true),
+                onUp: () => _press(LibretroCore.SELECT, false),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: 20),
               _smallBtn(
                 'START',
-                onDown: () => _press(LibretroCore.BUTTON_START, true),
-                onUp: () => _press(LibretroCore.BUTTON_START, false),
+                onDown: () => _press(LibretroCore.START, true),
+                onUp: () => _press(LibretroCore.START, false),
               ),
             ],
           ),
@@ -95,8 +86,7 @@ class VirtualGamepad extends StatelessWidget {
     );
   }
 
-  Widget _key({
-    required double size,
+  Widget _btn({
     required VoidCallback onDown,
     required VoidCallback onUp,
     required Widget child,
@@ -105,13 +95,13 @@ class VirtualGamepad extends StatelessWidget {
       onTapDown: (_) => onDown(),
       onTapUp: (_) => onUp(),
       child: Container(
-        width: size,
-        height: size,
+        width: 50,
+        height: 50,
         decoration: BoxDecoration(
           color: Colors.white24,
           shape: BoxShape.circle,
         ),
-        child: Center(child: child),
+        child: child,
       ),
     );
   }
@@ -134,7 +124,7 @@ class VirtualGamepad extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(color: Colors.white, fontSize: 26),
+            style: TextStyle(color: Colors.white, fontSize: 26),
           ),
         ),
       ),
@@ -150,12 +140,12 @@ class VirtualGamepad extends StatelessWidget {
       onTapDown: (_) => onDown(),
       onTapUp: (_) => onUp(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white24,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(text, style: const TextStyle(color: Colors.white)),
+        child: Text(text, style: TextStyle(color: Colors.white)),
       ),
     );
   }
